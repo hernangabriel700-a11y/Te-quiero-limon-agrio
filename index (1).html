@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sistema de Gestión de Biblioteca</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; margin: 0; background: #f4f6f8; color: #333; }
+  header { background: #1F4E78; color: white; padding: 18px 24px; }
+  header h1 { margin: 0; font-size: 22px; }
+  header p { margin: 4px 0 0; font-size: 13px; color: #cfe0f0; }
+  nav { background: #2E6DA4; display: flex; flex-wrap: wrap; }
+  nav button { background: none; border: none; color: white; padding: 12px 20px; font-size: 14px; cursor: pointer; }
+  nav button:hover, nav button.activo { background: #1F4E78; font-weight: bold; }
+  main { padding: 24px; max-width: 900px; margin: 0 auto; }
+  section { display: none; }
+  section.activa { display: block; }
+  h2 { color: #1F4E78; }
+  table { border-collapse: collapse; width: 100%; background: white; margin-top: 12px; }
+  th, td { border: 1px solid #ddd; padding: 8px 10px; font-size: 14px; text-align: left; }
+  th { background: #DAE8FC; }
+  .disponible { color: #2E7D32; font-weight: bold; }
+  .no-disponible { color: #B85450; font-weight: bold; }
+  form.agregar { background: white; padding: 14px; margin-top: 16px; border: 1px solid #ddd; display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+  form.agregar div { display: flex; flex-direction: column; font-size: 12px; }
+  input, select { padding: 6px; }
+  button.guardar { background: #70AD47; color: white; border: none; padding: 8px 16px; cursor: pointer; height: 34px; }
+  .inicio-card { background: white; padding: 20px; border-left: 4px solid #1F4E78; margin-top: 10px; }
+  footer { text-align: center; font-size: 12px; color: #999; padding: 20px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📚 Sistema de Gestión de Biblioteca</h1>
+</header>
+
+<nav id="menu">
+  <button data-seccion="inicio" class="activo">Inicio</button>
+  <button data-seccion="libros">Libros</button>
+  <button data-seccion="usuarios">Usuarios</button>
+  <button data-seccion="prestamos">Préstamos</button>
+</nav>
+
+<main>
+
+  <section id="inicio" class="activa">
+    <h2>Bienvenido</h2>
+    <div class="inicio-card">
+      <p><b>Módulos disponibles:</b> Libros, Usuarios y Préstamos.</p>
+    </div>
+  </section>
+
+  <section id="libros">
+    <h2>Libros</h2>
+    <table>
+      <thead>
+        <tr><th>Código</th><th>Título</th><th>Autor</th><th>Categoría</th><th>Disponible</th></tr>
+      </thead>
+      <tbody id="tablaLibros"></tbody>
+    </table>
+    <form class="agregar" onsubmit="agregarLibro(event)">
+      <div><label>Código</label><input id="l_codigo" required></div>
+      <div><label>Título</label><input id="l_titulo" required></div>
+      <div><label>Autor</label><input id="l_autor" required></div>
+      <div><label>Categoría</label><input id="l_categoria" required></div>
+      <button class="guardar" type="submit">Agregar libro</button>
+    </form>
+  </section>
+
+  <section id="usuarios">
+    <h2>Usuarios</h2>
+    <table>
+      <thead>
+        <tr><th>Carnet</th><th>Nombre</th><th>Contacto</th></tr>
+      </thead>
+      <tbody id="tablaUsuarios"></tbody>
+    </table>
+    <form class="agregar" onsubmit="agregarUsuario(event)">
+      <div><label>Carnet</label><input id="u_carnet" required></div>
+      <div><label>Nombre</label><input id="u_nombre" required></div>
+      <div><label>Contacto</label><input id="u_contacto" required></div>
+      <button class="guardar" type="submit">Agregar usuario</button>
+    </form>
+  </section>
+
+  <section id="prestamos">
+    <h2>Préstamos</h2>
+    <table>
+      <thead>
+        <tr><th>Usuario</th><th>Libro</th><th>Fecha préstamo</th><th>Fecha límite</th><th>Estado</th><th>Acción</th></tr>
+      </thead>
+      <tbody id="tablaPrestamos"></tbody>
+    </table>
+    <form class="agregar" onsubmit="agregarPrestamo(event)">
+      <div><label>Usuario (carnet)</label><input id="p_usuario" required></div>
+      <div><label>Libro (código)</label><input id="p_libro" required></div>
+      <div><label>Fecha préstamo</label><input id="p_fecha" type="date" required></div>
+      <div><label>Fecha límite</label><input id="p_limite" type="date" required></div>
+      <button class="guardar" type="submit">Registrar préstamo</button>
+    </form>
+  </section>
+
+</main>
+
+<script>
+  // ---------- Datos ficticios iniciales ----------
+  let libros = [
+    { codigo: "L001", titulo: "Cien años de soledad", autor: "G. García Márquez", categoria: "Novela", disponible: true },
+    { codigo: "L002", titulo: "Breve historia del tiempo", autor: "S. Hawking", categoria: "Ciencia", disponible: true },
+    { codigo: "L003", titulo: "Don Quijote de la Mancha", autor: "M. de Cervantes", categoria: "Novela", disponible: false },
+  ];
+
+  let usuarios = [
+    { carnet: "2024-001", nombre: "María López", contacto: "maria@correo.com" },
+    { carnet: "2024-002", nombre: "Carlos Ruiz", contacto: "carlos@correo.com" },
+  ];
+
+  let prestamos = [
+    { usuario: "2024-002", libro: "L003", fechaPrestamo: "2026-10-05", fechaLimite: "2026-10-12", estado: "Activo" },
+  ];
+
+  // ---------- Navegación ----------
+  document.querySelectorAll("#menu button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#menu button").forEach(b => b.classList.remove("activo"));
+      document.querySelectorAll("main section").forEach(s => s.classList.remove("activa"));
+      btn.classList.add("activo");
+      document.getElementById(btn.dataset.seccion).classList.add("activa");
+    });
+  });
+
+  // ---------- Render ----------
+  function renderLibros() {
+    const cuerpo = document.getElementById("tablaLibros");
+    cuerpo.innerHTML = "";
+    libros.forEach(l => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${l.codigo}</td><td>${l.titulo}</td><td>${l.autor}</td><td>${l.categoria}</td>
+        <td class="${l.disponible ? 'disponible' : 'no-disponible'}">${l.disponible ? 'Sí' : 'No'}</td>`;
+      cuerpo.appendChild(tr);
+    });
+  }
+
+  function renderUsuarios() {
+    const cuerpo = document.getElementById("tablaUsuarios");
+    cuerpo.innerHTML = "";
+    usuarios.forEach(u => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${u.carnet}</td><td>${u.nombre}</td><td>${u.contacto}</td>`;
+      cuerpo.appendChild(tr);
+    });
+  }
+
+  function renderPrestamos() {
+    const cuerpo = document.getElementById("tablaPrestamos");
+    cuerpo.innerHTML = "";
+    prestamos.forEach((p, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${p.usuario}</td><td>${p.libro}</td><td>${p.fechaPrestamo}</td><td>${p.fechaLimite}</td><td>${p.estado}</td>
+        <td>${p.estado === "Activo" ? `<button class="guardar" type="button" onclick="devolverPrestamo(${i})">Devolver</button>` : "-"}</td>`;
+      cuerpo.appendChild(tr);
+    });
+  }
+
+  function devolverPrestamo(i) {
+    const p = prestamos[i];
+    p.estado = "Devuelto";
+    const libro = libros.find(l => l.codigo === p.libro);
+    if (libro) libro.disponible = true;
+    renderPrestamos();
+    renderLibros();
+  }
+
+  // ---------- Formularios ----------
+  function agregarLibro(e) {
+    e.preventDefault();
+    libros.push({
+      codigo: document.getElementById("l_codigo").value,
+      titulo: document.getElementById("l_titulo").value,
+      autor: document.getElementById("l_autor").value,
+      categoria: document.getElementById("l_categoria").value,
+      disponible: true
+    });
+    e.target.reset();
+    renderLibros();
+  }
+
+  function agregarUsuario(e) {
+    e.preventDefault();
+    usuarios.push({
+      carnet: document.getElementById("u_carnet").value,
+      nombre: document.getElementById("u_nombre").value,
+      contacto: document.getElementById("u_contacto").value,
+    });
+    e.target.reset();
+    renderUsuarios();
+  }
+
+  function agregarPrestamo(e) {
+    e.preventDefault();
+    const libro = libros.find(l => l.codigo === document.getElementById("p_libro").value);
+    if (!libro) { alert("El código de libro no existe."); return; }
+    if (!libro.disponible) { alert("Ese libro no está disponible."); return; }
+    libro.disponible = false;
+    prestamos.push({
+      usuario: document.getElementById("p_usuario").value,
+      libro: document.getElementById("p_libro").value,
+      fechaPrestamo: document.getElementById("p_fecha").value,
+      fechaLimite: document.getElementById("p_limite").value,
+      estado: "Activo"
+    });
+    e.target.reset();
+    renderPrestamos();
+    renderLibros();
+  }
+
+  renderLibros();
+  renderUsuarios();
+  renderPrestamos();
+</script>
+
+</body>
+</html>
